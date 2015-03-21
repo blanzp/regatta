@@ -1,0 +1,30 @@
+<div class="panel panel-default" ng-controller="StartRaceController as race">
+
+    <input class="btn btn-default" type="button" value="Finish Race" ng-click="onFinish()">
+    <input class="btn btn-default" type="button" value="Post Results" ng-click="onPost(selectedEvent)">
+    <input class="btn btn-default" type="button" value="Reset" ng-click="onReset()">
+
+    {{ race.finish_time | date:"H:mm:ss.sss" }}
+    <b>{{ race.postStatus }}</b>
+
+    <!-- Default panel contents -->
+    <select class="form-control" ng-model="selectedEvent" ng-click="onFilterEvents(selectedEvent)">
+        <option ng-repeat="eventnum in race.eventList">{{ eventnum.label }}</option>
+    </select>
+
+    <div class="panel-heading">Events</div>
+
+    <!-- Table -->
+    <table class="table">
+        <tr>
+            <th>Event Code</th>
+            <th>Event</th>
+            <th>Description</th>
+        </tr>
+        <tr ng-repeat="event in race.filtered_event">
+            <td>{{ event.Event }}</td>
+            <td>{{ event.EventCode }}</td>
+            <td>{{ event.Description }}</td>
+        </tr>
+    </table>
+</div>

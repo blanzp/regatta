@@ -1,0 +1,18 @@
+<div class="panel panel-default" ng-controller="EventsController as event">
+    <!-- Default panel contents -->
+    <div class="panel-heading">Events</div>
+
+    <!-- Table -->
+    <table class="table">
+        <tr>
+            <th>Event Code</th>
+            <th>Event</th>
+            <th>Description</th>
+        </tr>
+        <tr ng-repeat="event in event.events">
+            <td>{{ event.Event }}</td>
+            <td>{{ event.EventCode }}</td>
+            <td>{{ event.Description }}</td>
+        </tr>
+    </table>
+</div>
