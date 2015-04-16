@@ -20,6 +20,7 @@ def set_properties(project):
     project.build_depends_on('boto')
     project.build_depends_on('flask')
     project.build_depends_on('pandas')
+    project.build.depends_on('passlib')
     project.set_property('unittest_module_glob', 'test_*')
     project.set_property('integrationtest_module_glob', 'test_*')
 
