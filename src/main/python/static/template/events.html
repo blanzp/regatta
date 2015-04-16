@@ -1,0 +1,18 @@
+    <div class="panel panel-default">
+        <div class="panel-heading panel_header">Events</div>
+        <div class="panel-body">
+            <table id="events" class="table">
+                <tr>
+                    <th>Event Number</th>
+                    <th>Event Title</th>
+                    <th>Details</th>
+                </tr>
+                <tr ng-repeat="event in events | orderBy:orderEvent ">
+                    <td>{{ event.eventNumber }}</td>
+                    <td>{{ event.eventTitle }}</td>
+                    <td><a href="#/view/events/{{event._id}}/flightcrews"><i class="fa fa-plus"></i></a><td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
