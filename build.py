@@ -11,7 +11,7 @@ use_plugin("python.distutils")
 use_plugin("python.integrationtest")
 
 name = "regatta"
-default_task = ['install_dependencies', 'run_unit_tests']
+default_task = ['run_unit_tests']
 
 
 @init
