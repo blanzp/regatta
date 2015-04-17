@@ -22,7 +22,6 @@ def set_properties(project):
     project.build_depends_on('pandas')
     project.build_depends_on('passlib')
     project.build_depends_on('simplejson')
-    project.build_depends_on('wolfram')
     project.set_property('unittest_module_glob', 'test_*')
     project.set_property('integrationtest_module_glob', 'test_*')
 
