@@ -1,12 +1,12 @@
-regattaApp.controller('StartRaceController', ['$http','$scope','$routeParams',
-  function($http,$scope,$routeParams){
+regattaApp.controller('StartRaceController', ['$http','$scope','$stateParams',
+  function($http,$scope,$stateParams){
     //console.log($routeParams);
 
     $scope.flight = [];
     $scope.startButtonDisable = true;
     $scope.saveButtonDisable = true;
 
-    $http.get('/api/flights/'+ $routeParams.flight).success( function(data){
+    $http.get('/api/flights/'+ $stateParams.flight).success( function(data){
       $scope.flight = data;
       $scope.startButtonDisable = false;
     });
