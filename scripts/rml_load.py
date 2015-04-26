@@ -2,7 +2,7 @@ import xml.etree.ElementTree as ET
 import pprint
 from collections import defaultdict
 
-import model
+from util import model
 
 
 def etree_to_dict(t):
