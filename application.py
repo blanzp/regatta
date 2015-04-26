@@ -443,9 +443,11 @@ def middle_out(lane_count, participants):
 def main():
     global conn
     # Create db connection
+    app.logger.debug("Connecting to "+os.environ.get('ENV'))
     conn = model.DBConnection(os.environ.get('ENV'))
     tables.create_tables(conn)
     audit = model.Audit(conn)
+    app.logger.debug("Starting Flask Server")
     app.run(host="0.0.0.0", debug=True)
     # app.run(debug=True)
 
