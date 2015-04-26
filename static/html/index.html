@@ -14,9 +14,14 @@
 </head>
 
 <body>
-    <div class="container">
-        <div ng-include="'../template/navbar.html'"></div>
-        <div class="ng-view"></div>
+    <div class="container-fluid">
+        <div class='row'>
+            <div class='col-sm-4'>
+                <div ng-include="'../template/navbar.html'"></div>
+            </div>
+        </div>
+        <!-- <div class="ng-view"></div> -->
+        <div ui-view></div>
     </div>
 
     <script src="../js/jquery-1.11.2.js"></script>
@@ -44,6 +49,13 @@
 
     <script src="../js/resultsCtrl.js"></script>
     <script src="../js/uploadCtrl.js"></script>
+    <script src="../js/authInterceptor.js"></script>
+    <script src="../js/session.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/login.js"></script>
+        <script src="../js/parentController.js"></script>
+        <script src="../js/angular-ui-router.min.js"></script>
+
 
 </body>
 </html>

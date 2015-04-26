@@ -14,5 +14,4 @@ regattaApp.controller('EventsController', ['$scope','$http',
     $scope.orderByLane = function(race) {
         return parseInt(race.laneNumber);
     };
-
 }]);
