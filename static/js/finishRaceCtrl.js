@@ -1,5 +1,5 @@
-regattaApp.controller('FinishRaceController', ['$http','$scope','$routeParams',
-  function($http,$scope,$routeParams) {
+regattaApp.controller('FinishRaceController', ['$http','$scope','$stateParams',
+  function($http,$scope,$stateParams) {
 
     $scope.flight = [];
     $scope.finish_times = [];
@@ -10,7 +10,7 @@ regattaApp.controller('FinishRaceController', ['$http','$scope','$routeParams',
     $scope.finish_status = "";
     $scope.saveButtonDisabled = false;
 
-    $http.get('/api/flights/'+ $routeParams.flight).success( function(data){
+    $http.get('/api/flights/'+ $stateParams.flight).success( function(data){
       $scope.flight = data;
       $scope.startButtonDisable = false;
       $scope.expectedRacers = _.map(_.pluck($scope.flight.racingCrew,'laneNumber'),

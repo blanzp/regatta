@@ -52,5 +52,6 @@ regattaApp.controller('FinishController', ['$http','$scope',
       return parseInt(flight.eventNumber);
     };
 
+
   }
   ]);

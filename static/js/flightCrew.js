@@ -1,14 +1,14 @@
-regattaApp.controller('FlightCrewController', ['$scope','$http','$routeParams',
-  function ($scope,$http,$routeParams) {
+regattaApp.controller('FlightCrewController', ['$scope','$http','$stateParams',
+  function ($scope,$http,$stateParams) {
 
     $scope.crews = [];
     $scope.flights = [];
-    $scope.event_id = $routeParams.event_id;
+    $scope.event_id = $stateParams.event_id;
     $scope.eventTitle = "";
     $scope.crew_dict = {};
 
 
-    $http.get('/api/events/'+ $routeParams.event_id).success( function(data){
+    $http.get('/api/events/'+ $stateParams.event_id).success( function(data){
       $scope.crews = data.crew;
       $scope.flights = data.stage[0].race;
       $scope.eventTitle = data.eventTitle;
