@@ -2,17 +2,14 @@ import json
 
 from flask import Flask, request, abort, url_for
 
+from scripts import rml_load
+
 # import datetime
-import model
+from util import model, tables
 import os
 
-from flask_login import (LoginManager, login_required, login_user,
-                         logout_user, UserMixin)
+from flask_login import (LoginManager, login_required, UserMixin)
 from itsdangerous import URLSafeTimedSerializer
-
-
-#from flask.ext.security import Security, SQLAlchemyUserDatastore, \
-#    UserMixin, RoleMixin, login_required
 
 from passlib.apps import custom_app_context as pwd_context
 import simplejson
@@ -31,11 +28,7 @@ login_serializer = URLSafeTimedSerializer(app.secret_key)
 #Flask-Login Login Manager
 login_manager = LoginManager()
 
-# TODO should i abstract this
-
-# Create db connection
-conn = model.DBConnection(os.environ.get('ENV'))
-
+global conn
 
 class User(UserMixin):
     """
@@ -117,30 +110,30 @@ def load_token(token):
     return None
  
 
-@app.route("/logout/")
-def logout_page():
-    """
-    Web Page to Logout User, then Redirect them to Index Page.
-    """
-    logout_user()
-    return redirect("/")
+# @app.route("/logout/")
+# def logout_page():
+#     """
+#     Web Page to Logout User, then Redirect them to Index Page.
+#     """
+#     logout_user()
+#     return redirect("/")
  
-@app.route("/login/", methods=["GET", "POST"])
-def login_page():
-    """
-    Web Page to Display Login Form and process form. 
-    """
-    if request.method == "POST":
-        user = User.get(request.form['username'])
- 
-        #If we found a user based on username then compare that the submitted
-        #password matches the password in the database.  The password is stored
-        #is a slated hash format, so you must hash the password before comparing
-        #it.
-        if user and hash_pass(request.form['password']) == user.password:
-            login_user(user, remember=True)
-            return redirect(request.args.get("next") or "/")
-    return render_template("login.html")      
+# @app.route("/login/", methods=["GET", "POST"])
+# def login_page():
+#     """
+#     Web Page to Display Login Form and process form.
+#     """
+#     if request.method == "POST":
+#         user = User.get(request.form['username'])
+#
+#         #If we found a user based on username then compare that the submitted
+#         #password matches the password in the database.  The password is stored
+#         #is a slated hash format, so you must hash the password before comparing
+#         #it.
+#         if user and hash_pass(request.form['password']) == user.password:
+#             login_user(user, remember=True)
+#             return redirect(request.args.get("next") or "/")
+#     return render_template("login.html")
  
 
 
@@ -380,7 +373,6 @@ def get_user(email):
                        'last_name': user.last_name}), 200
 
 
-from scripts import rml_load
 
 
 @app.route('/api/loadrml', methods=['POST'])
@@ -451,6 +443,11 @@ def middle_out(lane_count, participants):
 
 
 def main():
+    global conn
+    # Create db connection
+    conn = model.DBConnection(os.environ.get('ENV'))
+    tables.create_tables(conn)
+
     app.run(host="0.0.0.0", debug=True)
     # app.run(debug=True)
 
