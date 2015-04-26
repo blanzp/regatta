@@ -143,8 +143,6 @@ def load_token(token):
 def get_resource():
     return "hello paul"
 
-audit = model.Audit(conn)
-
 
 # Main page
 @app.route('/')
@@ -447,7 +445,7 @@ def main():
     # Create db connection
     conn = model.DBConnection(os.environ.get('ENV'))
     tables.create_tables(conn)
-
+    audit = model.Audit(conn)
     app.run(host="0.0.0.0", debug=True)
     # app.run(debug=True)
 

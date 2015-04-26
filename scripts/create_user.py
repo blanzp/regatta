@@ -1,6 +1,6 @@
 __author__ = 'Paul'
 
-import model
+from util import model
 
 
 def main():
