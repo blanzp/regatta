@@ -1,5 +1,5 @@
-regattaApp.controller('EventsController', ['$scope','$http',
-  function ($scope,$http) {
+regattaApp.controller('EventsController', ['$scope','$http','$location',
+  function ($scope,$http,$location) {
 
     $scope.events = [];
 
@@ -13,5 +13,8 @@ regattaApp.controller('EventsController', ['$scope','$http',
 
     $scope.orderByLane = function(race) {
         return parseInt(race.laneNumber);
+    };
+    $scope.showCrew = function(event) {
+      $location.path("/view/events/"+event._id+"/flightcrews");
     };
 }]);
