@@ -16,18 +16,36 @@
 <body>
     <div class="container-fluid">
         <div class='row'>
-            <div class='col-sm-4'>
+            <div class='col-sm-12'>
                 <div ng-include="'/template/navbar.html'"></div>
             </div>
         </div>
         <!-- <div class="ng-view"></div> -->
+
         <div ui-view></div>
     </div>
 
+    <!--
+    <nav class="navbar navbar-default navbar-fixed-bottom">
+        <div class="container">
+            <button type="button" class="btn btn-default" aria-label="Left Align">
+                <span class="glyphicon glyphicon-home" aria-hidden="true"></span>
+            </button>
+            <button type="button" class="btn btn-default" aria-label="Left Align">
+                <span class="glyphicon glyphicon-play" aria-hidden="true"></span>
+            </button>
+            <button type="button" class="btn btn-default" aria-label="Left Align">
+                <span class="glyphicon glyphicon-stop" aria-hidden="true"></span>
+            </button>
+            <button type="button" class="btn btn-default" aria-label="Right Align">
+                <span class="glyphicon glyphicon-cog" aria-hidden="true"></span>
+            </button>
+        </div>
+    </nav>
+-->
     <script src="/js/jquery-1.11.2.js"></script>
     <script src="/js/bootstrap.min.js"></script>
     <script src="/js/angular.js"></script>
-    <script src="/js/angular-route.min.js"></script>
     <script src="/js/underscore-min.js"></script>
     <script src="/js/ui-bootstrap.min.js"></script>
     <script src="/js/angular-cookies.min.js"></script>
@@ -49,6 +67,8 @@
     <script src="/js/session.js"></script>
     <script src="/js/auth.js"></script>
     <script src="/js/login.js"></script>
+    <script src="/js/moment.min.js"></script>
+
     <script src="/js/parentController.js"></script>
     <script src="/js/angular-ui-router.min.js"></script>
 
