@@ -15,8 +15,14 @@ from passlib.apps import custom_app_context as pwd_context
 import simplejson
 import time
 
+FLASK_DEBUG = 'false' if os.environ.get('FLASK_DEBUG') is None else os.environ.get('FLASK_DEBUG')
+
 # Must be application for AWS Elastic Beanstalk
 application = Flask(__name__, static_folder='static')
+application.config.from_object(__name__)
+application.config.from_envvar('APP_CONFIG', silent=True)
+application.debug = application.config['FLASK_DEBUG'] in ['true', 'True']
+
 app = application
 
 app.secret_key = "a_random_secret_key_$%#!@"
@@ -169,6 +175,9 @@ def get_resource_id(resource, id):
         return "Invalid resource"
     return simplejson.dumps(data._data)
 
+@app.route('/api/custom')
+def get_custom():
+    return json.dumps( { "screenname": os.environ.get("TWITTER_ACCT"), "hashtag": os.environ.get("HASHTAG")})
 
 # Get Items
 @app.route('/api/<resource>')
@@ -202,6 +211,7 @@ def get_flights():
                                 'race_id': race['_id'],
                                 'stage_index': stage_index,
                                 'flight_index': race_index,
+                                'stageType': 'Final' if 'stageType' in stage else 'Heat',
                                 'eventTitle': event['eventTitle'],
                                 'raceNumber': race['raceNumber'],
                                 'start_time': race['start_time'] if 'start_time' in race else '',
@@ -448,7 +458,7 @@ def main():
     tables.create_tables(conn)
     audit = model.Audit(conn)
     app.logger.debug("Starting Flask Server")
-    app.run(host="0.0.0.0", debug=True)
+    app.run(host="0.0.0.0")
     # app.run(debug=True)
 
 
