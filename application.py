@@ -1,119 +1,163 @@
 import json
 
 from flask import Flask, request, abort, url_for
-
-from scripts import rml_load
-
-# import datetime
-from util import model, tables
 import os
-
 from flask_login import (LoginManager, login_required, UserMixin)
 from itsdangerous import URLSafeTimedSerializer
-
 from passlib.apps import custom_app_context as pwd_context
 import simplejson
 import time
 
-FLASK_DEBUG = 'false' if os.environ.get('FLASK_DEBUG') is None else os.environ.get('FLASK_DEBUG')
+from scripts import rml_load
+from util.model import DBConnection
 
-# Must be application for AWS Elastic Beanstalk
+
+# Initialize Flask
+FLASK_DEBUG = 'false' if os.environ.get('FLASK_DEBUG') is None else os.environ.get('FLASK_DEBUG')
 application = Flask(__name__, static_folder='static')
 application.config.from_object(__name__)
 application.config.from_envvar('APP_CONFIG', silent=True)
 application.debug = application.config['FLASK_DEBUG'] in ['true', 'True']
-
 app = application
 
 app.secret_key = "a_random_secret_key_$%#!@"
  
-#Login_serializer used to encryt and decrypt the cookie token for the remember
-#me option of flask-login
+# Login_serializer used to encryt and decrypt the cookie token for the remember
+# me option of flask-login
 login_serializer = URLSafeTimedSerializer(app.secret_key)
  
-#Flask-Login Login Manager
+# Flask-Login Login Manager
 login_manager = LoginManager()
 
 global conn
 
-class User(UserMixin):
-    """
-    User Class for flask-Login
-    """
-    def __init__(self, userid, password):
-        self.id = userid
-        self.password = password
- 
-    def get_auth_token(self):
-        """
-        Encode a secure token for cookie
-        """
-        data = [str(self.id), self.password]
-        return login_serializer.dumps(data)
- 
-    @staticmethod
-    def get(userid):
-        """
-        Static method to search the database and see if userid exists.  If it 
-        does exist then return a User Object.  If not then return None as 
-        required by Flask-Login. 
-        """
-        #For this example the USERS database is a list consisting of 
-        #(user,hased_password) of users.
-        user_coll = model.UserCollection(conn)
-        user = user_coll.get_item(email=userid)
-        if user:
-            return User(user['user'],user['password'])
-        return None
+from boto.dynamodb2.table import Table
+from boto.dynamodb2.items import Item
+from passlib.apps import custom_app_context as pwd_context2
+from boto.dynamodb2.fields import HashKey, RangeKey, GlobalAllIndex
 
-def hash_pass(password):
-    """
-    Return the md5 hash of the password+salt
-    """
-    salted_password = password + app.secret_key
-    return md5.new(salted_password).hexdigest()
 
-@login_manager.user_loader
-def load_user(userid):
-    """
-    Flask-Login user_loader callback.
-    The user_loader function asks this function to get a User Object or return 
-    None based on the userid.
-    The userid was stored in the session environment by Flask-Login.  
-    user_loader stores the returned User object in current_user during every 
-    flask request. 
-    """
-    return User.get(userid)
+# Create db connection
+app.logger.info("Connecting to "+os.environ.get('ENV'))
+app.logger.info("Using AWS "+application.config['AWS_REGION'])
+
+conn = DBConnection(os.environ.get('ENV'), application.config['AWS_REGION'])
+
+tables = conn.conn.list_tables()['TableNames']
+app.logger.debug("Found tables: " + str(tables))
+
+#tables.create_tables(conn)
+
+if 'organizations' not in tables:
+    app.logger.debug("Creating organizations table")
+    org_table = Table.create(application.config['ORG_TABLE'],
+                             throughput={'read': 1, 'write': 1},
+                             connection=conn.conn,
+                             schema=[HashKey('_id')],
+                             global_indexes=[GlobalAllIndex('name-index', parts=[HashKey('name')])])
+
+else:
+    org_table = Table(application.config['ORG_TABLE'], connection=conn.conn)
+
+if 'events' not in tables:
+    app.logger.debug("Creating events table")
+    event_table = Table.create(application.config['EVENT_TABLE'],
+                               throughput={'read': 1, 'write': 1},
+                               connection=conn.conn,
+                               schema=[HashKey('_id')],
+                               global_indexes=[GlobalAllIndex('event-index', parts=[HashKey('event')])])
+else:
+    event_table = Table(application.config['EVENT_TABLE'], connection=conn.conn)
+
+if 'regatta' not in tables:
+    app.logger.debug("Creating regatta table")
+    regatta_table = Table.create(application.config['REGATTA_TABLE'],
+                               throughput={'read': 1, 'write': 1},
+                               connection=conn.conn,
+                               schema=[HashKey('_id')],
+                               global_indexes=[GlobalAllIndex('name-index', parts=[HashKey('name')])])
+else:
+    regatta_table = Table(application.config['REGATTA_TABLE'], connection=conn.conn)
+
+#
+# class User(UserMixin):
+#     """
+#     User Class for flask-Login
+#     """
+#     def __init__(self, userid, password):
+#         self.id = userid
+#         self.password = password
+#
+#     def get_auth_token(self):
+#         """
+#         Encode a secure token for cookie
+#         """
+#         data = [str(self.id), self.password]
+#         return login_serializer.dumps(data)
+#
+#     @staticmethod
+#     def get(userid):
+#         """
+#         Static method to search the database and see if userid exists.  If it
+#         does exist then return a User Object.  If not then return None as
+#         required by Flask-Login.
+#         """
+#         #For this example the USERS database is a list consisting of
+#         #(user,hased_password) of users.
+#         user_coll = model.UserCollection(conn)
+#         user = user_coll.get_item(email=userid)
+#         if user:
+#             return User(user['user'],user['password'])
+#         return None
+
+# def hash_pass(password):
+#     """
+#     Return the md5 hash of the password+salt
+#     """
+#     salted_password = password + app.secret_key
+#     return md5.new(salted_password).hexdigest()
+
+# @login_manager.user_loader
+# def load_user(userid):
+#     """
+#     Flask-Login user_loader callback.
+#     The user_loader function asks this function to get a User Object or return
+#     None based on the userid.
+#     The userid was stored in the session environment by Flask-Login.
+#     user_loader stores the returned User object in current_user during every
+#     flask request.
+#     """
+#     return User.get(userid)
  
-@login_manager.token_loader
-def load_token(token):
-    """
-    Flask-Login token_loader callback. 
-    The token_loader function asks this function to take the token that was 
-    stored on the users computer process it to check if its valid and then 
-    return a User Object if its valid or None if its not valid.
-    """
- 
-    #The Token itself was generated by User.get_auth_token.  So it is up to 
-    #us to known the format of the token data itself.  
- 
-    #The Token was encrypted using itsdangerous.URLSafeTimedSerializer which 
-    #allows us to have a max_age on the token itself.  When the cookie is stored
-    #on the users computer it also has a exipry date, but could be changed by
-    #the user, so this feature allows us to enforce the exipry date of the token
-    #server side and not rely on the users cookie to exipre. 
-    max_age = app.config["REMEMBER_COOKIE_DURATION"].total_seconds()
- 
-    #Decrypt the Security Token, data = [username, hashpass]
-    data = login_serializer.loads(token, max_age=max_age)
- 
-    #Find the User
-    user = User.get(data[0])
- 
-    #Check Password and return user or None
-    if user and data[1] == user.password:
-        return user
-    return None
+# @login_manager.token_loader
+# def load_token(token):
+#     """
+#     Flask-Login token_loader callback.
+#     The token_loader function asks this function to take the token that was
+#     stored on the users computer process it to check if its valid and then
+#     return a User Object if its valid or None if its not valid.
+#     """
+#
+#     #The Token itself was generated by User.get_auth_token.  So it is up to
+#     #us to known the format of the token data itself.
+#
+#     #The Token was encrypted using itsdangerous.URLSafeTimedSerializer which
+#     #allows us to have a max_age on the token itself.  When the cookie is stored
+#     #on the users computer it also has a exipry date, but could be changed by
+#     #the user, so this feature allows us to enforce the exipry date of the token
+#     #server side and not rely on the users cookie to exipre.
+#     max_age = app.config["REMEMBER_COOKIE_DURATION"].total_seconds()
+#
+#     #Decrypt the Security Token, data = [username, hashpass]
+#     data = login_serializer.loads(token, max_age=max_age)
+#
+#     #Find the User
+#     user = User.get(data[0])
+#
+#     #Check Password and return user or None
+#     if user and data[1] == user.password:
+#         return user
+#     return None
  
 
 # @app.route("/logout/")
@@ -160,14 +204,17 @@ def index():
 # Get single item
 @app.route('/api/<resource>/<id>')
 def get_resource_id(resource, id):
-    if resource == 'athletes':
-        data = model.AthleteCollection(conn).get_item(_id=id)
-    elif resource == 'organizations':
-        data = model.OrganizationCollection(conn).get_item(_id=id)
+    app.logger.debug("Querying resource "+resource+" with id "+id )
+    # if resource == 'athletes':
+    #     data = model.AthleteCollection(conn).get_item(_id=id)
+    if resource == 'organizations':
+        # data = model.OrganizationCollection(conn).get_item(_id=id)
+        data = org_table.get_item(_id=id)
     elif resource == 'events':
-        data = model.EventCollection(conn).get_item(_id=id)
-    elif resource == 'crews':
-        data = model.CrewCollection(conn).get_item(_id=id)
+        # data = model.EventCollection(conn).get_item(_id=id)
+        data = event_table.get_item(_id=id)
+    #elif resource == 'crews':
+    #     data = model.CrewCollection(conn).get_item(_id=id)
     elif resource == 'flights':
         flights = get_flights()
         return simplejson.dumps(flights[int(id)])
@@ -182,12 +229,17 @@ def get_custom():
 # Get Items
 @app.route('/api/<resource>')
 def get_resources(resource):
+    app.logger.debug("Querying resource "+resource)
+
     if resource == 'events':
-        data = model.EventCollection(conn).scan()
+        # data = model.EventCollection(conn).scan()
+        data = event_table.scan()
     elif resource == 'regattas':
-        data = model.RegattaCollection(conn).scan()
+        # data = model.RegattaCollection(conn).scan()
+        data = regatta_table.scan()
     elif resource == 'organizations':
-        data = model.OrganizationCollection(conn).scan()
+        # data = model.OrganizationCollection(conn).scan()
+        data = org_table.scan()
     elif resource == 'flights':
         flights = get_flights()
         return simplejson.dumps(flights)
@@ -197,7 +249,8 @@ def get_resources(resource):
 
 def get_flights():
     flights = []
-    events = model.EventCollection(conn).scan()
+    #events = model.EventCollection(conn).scan()
+    events = event_table.scan()
     for event in events:
         stage_index = 0
         for stage in event['stage']:
@@ -256,41 +309,41 @@ def get_crew_by_id(crews,id):
 #                             x['raceNumber'])))
 
 
-@app.route('/api/races/<race_id>', methods=['POST'])
-def update_race(race_id):
-    start_time = request.json['start_time']
-    app.logger.debug('in update race' + race_id + ' ' + str(start_time))
-    race = model.RaceCollection(conn).get_item(_id=race_id)
-    app.logger.debug("Got race: " + race['_id'])
-    race['start_time'] = start_time
-    race['status'] = "In Progress"
-    race.save()
-    return "Race updated successfully"
+# @app.route('/api/races/<race_id>', methods=['POST'])
+# def update_race(race_id):
+#     start_time = request.json['start_time']
+#     app.logger.debug('in update race' + race_id + ' ' + str(start_time))
+#     race = model.RaceCollection(conn).get_item(_id=race_id)
+#     app.logger.debug("Got race: " + race['_id'])
+#     race['start_time'] = start_time
+#     race['status'] = "In Progress"
+#     race.save()
+#     return "Race updated successfully"
+#
+#
+# @app.route('/api/racecrews', methods=['POST'])
+# def update_races():
+#     race_id = request.args.get('race_id')
+#     race = model.RaceCollection(conn).get_item(_id=race_id)
+#     finishes = request.json.get('finishes')
+#
+#     for finish in finishes:
+#         crew = model.RacingCrewCollection(conn).get_item(_id=finish['crew'])
+#         crew['order'] = finish['order']
+#         crew['split_time'] = finish['split_time']
+#         crew['finish_time'] = finish['finish_raw_time'] - race['start_time']
+#         crew.save()
+#
+#     return "OK"
 
-
-@app.route('/api/racecrews', methods=['POST'])
-def update_races():
-    race_id = request.args.get('race_id')
-    race = model.RaceCollection(conn).get_item(_id=race_id)
-    finishes = request.json.get('finishes')
-
-    for finish in finishes:
-        crew = model.RacingCrewCollection(conn).get_item(_id=finish['crew'])
-        crew['order'] = finish['order']
-        crew['split_time'] = finish['split_time']
-        crew['finish_time'] = finish['finish_raw_time'] - race['start_time']
-        crew.save()
-
-    return "OK"
-
-
-def get_crew_dict():
-    crew_dict = {}
-    crew_detail = model.CrewCollection(conn).scan()
-    for detail in crew_detail:
-        crew_dict[detail['_id']] = detail._data
-    return crew_dict
-
+#
+# def get_crew_dict():
+#     crew_dict = {}
+#     crew_detail = model.CrewCollection(conn).scan()
+#     for detail in crew_detail:
+#         crew_dict[detail['_id']] = detail._data
+#     return crew_dict
+#
 
 def find_racecrew_by_lane(race_crews, lane):
     i = 0
@@ -311,7 +364,8 @@ def start_race(event_id, stage_index, race_index):
     action = request.args.get('action')
 
     if action == 'start':
-        event = model.EventCollection(conn).get_item(_id=event_id)
+        # event = model.EventCollection(conn).get_item(_id=event_id)
+        event = event_table.get_item(_id=event_id)
         if 'status' not in event['stage'][stage_index]['race'][race_index]:
             start_time = request.json.get('start_time')
             event['stage'][stage_index]['race'][race_index]['start_time'] = start_time
@@ -322,7 +376,9 @@ def start_race(event_id, stage_index, race_index):
         else:
             return "Race already started or finished", 404
     elif action == "finish":
-        event = model.EventCollection(conn).get_item(_id=event_id)
+        # event = model.EventCollection(conn).get_item(_id=event_id)
+        event = event_table.get_item(_id=event_id)
+
         if 'status' not in event['stage'][stage_index]['race'][race_index]:
             return "Race not started", 404
         elif event['stage'][stage_index]['race'][race_index]['status'] == "Finished":
@@ -355,30 +411,30 @@ def static_proxy(path):
     return app.send_static_file(path)
 
 
-@app.route('/api/users', methods=['POST'])
-def add_user():
-    password = request.json.get('password')
-    email = request.json.get('email')
-    first = request.json.get('first')
-    last = request.json.get('last')
-
-    if email is None or password is None:
-        abort(400)  # missing arguments
-        user_coll = model.UserCollection(conn)
-        new_user = model.User(
-            user_coll, email=email, password=password, first=first, last=last)
-        new_user.save()
-        return json.dumps({'email': email}), 201,
-        {'Location': url_for('get_user', email=email, _external=True)}
-
-
-@app.route('/api/users/<email>', methods=['GET'])
-def get_user(email):
-    user_coll = model.UserCollection(conn)
-    user = user_coll.query_2(email=email)
-    return json.dumps({'email': user.email,
-                       'first_name': user.first_name,
-                       'last_name': user.last_name}), 200
+# @app.route('/api/users', methods=['POST'])
+# def add_user():
+#     password = request.json.get('password')
+#     email = request.json.get('email')
+#     first = request.json.get('first')
+#     last = request.json.get('last')
+#
+#     if email is None or password is None:
+#         abort(400)  # missing arguments
+#         user_coll = model.UserCollection(conn)
+#         new_user = model.User(
+#             user_coll, email=email, password=password, first=first, last=last)
+#         new_user.save()
+#         return json.dumps({'email': email}), 201,
+#         {'Location': url_for('get_user', email=email, _external=True)}
+#
+#
+# @app.route('/api/users/<email>', methods=['GET'])
+# def get_user(email):
+#     user_coll = model.UserCollection(conn)
+#     user = user_coll.query_2(email=email)
+#     return json.dumps({'email': user.email,
+#                        'first_name': user.first_name,
+#                        'last_name': user.last_name}), 200
 
 
 
@@ -392,32 +448,56 @@ def upload_rml():
     clear_db()
     app.logger.debug("Loading RML")
     rml_load.load_rml_from_string(rml,conn)
+    app.logger.debug("Load Complete")
     return "Loaded new RML File", 200
 
 def clear_db():
-    model.OrganizationCollection(conn).delete()
-    model.EventCollection(conn).delete()
-    model.RegattaCollection(conn).delete()
+    global org_table
+    global event_table
+    global regatta_table
+    # model.OrganizationCollection(conn).delete()
+    org_table.delete()
+    # model.EventCollection(conn).delete()
+    event_table.delete()
+    # model.RegattaCollection(conn).delete()
+    regatta_table.delete()
 
-    model.OrganizationCollection(conn).create()
-    time.sleep(5)
-    model.EventCollection(conn).create()
-    time.sleep(5)
-    model.RegattaCollection(conn).create()
-    time.sleep(5)
+    app.logger.info("Sleeping for 60 seconds to allow tables to delete")
+    time.sleep(60)
+
+    app.logger.debug("Creating organization table")
+    org_table = Table.create(application.config['ORG_TABLE'],
+                             throughput={'read': 1, 'write': 1},
+                             connection=conn.conn,
+                             schema=[HashKey('_id')],
+                             global_indexes=[GlobalAllIndex('name-index', parts=[HashKey('name')])])
+    app.logger.debug("Creating events table")
+    event_table = Table.create(application.config['EVENT_TABLE'],
+                               throughput={'read': 1, 'write': 1},
+                               connection=conn.conn,
+                               schema=[HashKey('_id')],
+                               global_indexes=[GlobalAllIndex('event-index', parts=[HashKey('event')])])
+    app.logger.debug("Creating regatta table")
+    regatta_table = Table.create(application.config['REGATTA_TABLE'],
+                                 throughput={'read': 1, 'write': 1},
+                                 connection=conn.conn,
+                                 schema=[HashKey('_id')],
+                                 global_indexes=[GlobalAllIndex('name-index', parts=[HashKey('name')])])
+    app.logger.info("Sleeping for 60 seconds to allow tables to create")
+    time.sleep(60)
 
 # TODO clean this up.  Shooud propely wrap user
 def verify_password_hash(hash, password):
     return pwd_context.verify(password, hash)
 
 
-def verify_password(email, password):
-    user_coll = model.UserCollection(conn)
-    user = user_coll.get_item(email=email)
-    if not user or not verify_password_hash(user['password_hash'], password):
-        return False
-        app.g.user = user
-    return True
+# def verify_password(email, password):
+#     user_coll = model.UserCollection(conn)
+#     user = user_coll.get_item(email=email)
+#     if not user or not verify_password_hash(user['password_hash'], password):
+#         return False
+#         app.g.user = user
+#     return True
 
 
 def assign_lanes(lane_count, events, boats):
@@ -451,14 +531,12 @@ def middle_out(lane_count, participants):
 
 
 def main():
-    global conn
-    # Create db connection
-    app.logger.debug("Connecting to "+os.environ.get('ENV'))
-    conn = model.DBConnection(os.environ.get('ENV'))
-    tables.create_tables(conn)
-    audit = model.Audit(conn)
-    app.logger.debug("Starting Flask Server")
-    app.run(host="0.0.0.0")
+
+
+
+    # audit = model.Audit(conn)
+    app.logger.info("Starting Flask Server")
+    app.run(host="0.0.0.0", debug=True)
     # app.run(debug=True)
 
 
