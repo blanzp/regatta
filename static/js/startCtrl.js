@@ -5,6 +5,7 @@ regattaApp.controller('StartController', ['$http','$scope','$modal',
     $scope.saveButtonDisabled = false;
     $scope.startButtonDisabled = false;
 
+
     var get_flights = function(events){
       $http.get('/api/events').success( function(data){
         events = data;

@@ -2,6 +2,7 @@ regattaApp
 .controller('UploadController', function($scope, FileUploader) {
 	$scope.hideSpinner = true;
 
+
 	var uploader = $scope.uploader = new FileUploader({url: '/api/loadrml'});
 	uploader.onCompleteItem = function(fileItem, response, status, headers) {
 		console.info('onCompleteItem', fileItem, response, status, headers);
