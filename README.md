@@ -1,4 +1,5 @@
 # Regatta
+[![Build Status](https://travis-ci.org/blanzp/regatta.svg?branch=master)](https://travis-ci.org/blanzp/regatta)
 
 # THIS PROJECT IS STILL UNDER DEVELOPMENT
 
